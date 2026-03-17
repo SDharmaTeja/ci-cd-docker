@@ -1,0 +1,26 @@
+{
+  "myapp": {
+    "1.0.0": {
+      "location_type": "supermarket",
+      "location_path": "http://172.20.0.50/",
+      "download_url": "http://172.20.0.50/cookbooks/myapp-1.0.0.tar.gz",
+      "dependencies": {}
+    }
+  },
+  "java": {
+    "10.0.0": {
+      "location_type": "supermarket",
+      "location_path": "https://supermarket.chef.io/",
+      "download_url": "https://supermarket.chef.io/api/v1/cookbooks/java/versions/10.0.0/download",
+      "dependencies": {}
+    }
+  },
+  "docker": {
+    "10.0.0": {
+      "location_type": "supermarket",
+      "location_path": "https://supermarket.chef.io/",
+      "download_url": "https://supermarket.chef.io/api/v1/cookbooks/docker/versions/10.0.0/download",
+      "dependencies": {}
+    }
+  }
+}

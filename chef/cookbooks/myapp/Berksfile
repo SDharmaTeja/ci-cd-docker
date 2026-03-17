@@ -1,0 +1,14 @@
+# =============================================================================
+# chef/cookbooks/myapp/Berksfile
+# Resolves cookbook dependencies from Chef Supermarket
+# =============================================================================
+
+source 'https://supermarket.chef.io'
+# For demo: use local Supermarket
+# source 'http://localhost:8200'
+
+metadata  # reads metadata.rb for dependencies
+
+# Pin community cookbooks
+cookbook 'java',   '~> 10.0', supermarket: 'https://supermarket.chef.io'
+cookbook 'docker', '~> 10.0', supermarket: 'https://supermarket.chef.io'

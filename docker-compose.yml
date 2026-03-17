@@ -1,0 +1,267 @@
+version: "3.8"
+
+# =============================================================================
+# CI/CD Demo Environment — Docker Compose
+# Components: GitLab CE | Jenkins | Nexus | Chef Server | Chef Supermarket
+# =============================================================================
+
+networks:
+  cicd_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+volumes:
+  gitlab_data:
+  gitlab_logs:
+  gitlab_config:
+  jenkins_home:
+  nexus_data:
+  chef_server_data:
+  chef_server_logs:
+  chef_server_etc:
+  chef_supermarket_data:
+  postgres_data:
+  redis_data:
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — shared DB for GitLab & Chef Supermarket
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:14-alpine
+    container_name: cicd_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cicdadmin
+      POSTGRES_PASSWORD: cicdpassword
+      POSTGRES_MULTIPLE_DATABASES: gitlabhq_production,supermarket
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
+    networks:
+      cicd_net:
+        ipv4_address: 172.20.0.10
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cicdadmin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Redis — used by GitLab & Supermarket
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: cicd_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      cicd_net:
+        ipv4_address: 172.20.0.11
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # GitLab Community Edition — Source Code Management
+  # ---------------------------------------------------------------------------
+  gitlab:
+    image: gitlab/gitlab-ce:16.9.2-ce.0
+    container_name: cicd_gitlab
+    restart: unless-stopped
+    hostname: gitlab.cicd.local
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://localhost:8080'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        gitlab_rails['initial_root_password'] = 'CicdDemo2024!'
+        gitlab_rails['initial_shared_runners_registration_token'] = 'demo-runner-token'
+        # Disable sign-up for demo security
+        gitlab_rails['gitlab_signup_enabled'] = false
+        # Reduce resource usage for demo
+        puma['worker_processes'] = 2
+        sidekiq['concurrency'] = 5
+        prometheus_monitoring['enable'] = false
+        alertmanager['enable'] = false
+        grafana['enable'] = false
+        gitlab_exporter['enable'] = false
+        nginx['worker_processes'] = 2
+    ports:
+      - "8080:80"
+      - "8443:443"
+      - "2222:22"
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+    networks:
+      cicd_net:
+        ipv4_address: 172.20.0.20
+    shm_size: "256m"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/-/health"]
+      interval: 60s
+      timeout: 30s
+      retries: 10
+      start_period: 300s
+
+  # ---------------------------------------------------------------------------
+  # Jenkins — CI/CD Pipeline Orchestrator
+  # ---------------------------------------------------------------------------
+  jenkins:
+    build:
+      context: ./jenkins
+      dockerfile: Dockerfile
+    container_name: cicd_jenkins
+    restart: unless-stopped
+    user: root
+    environment:
+      JAVA_OPTS: >-
+        -Djenkins.install.runSetupWizard=false
+        -Dhudson.model.DownloadService.noSignatureCheck=true
+      JENKINS_OPTS: "--httpPort=8090"
+      GITLAB_URL: "http://172.20.0.20"
+      NEXUS_URL: "http://172.20.0.30:8081"
+      CHEF_SERVER_URL: "http://172.20.0.40"
+    ports:
+      - "8090:8090"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./jenkins/init.groovy.d:/var/jenkins_home/init.groovy.d
+      - ./jenkins/plugins.txt:/usr/share/jenkins/ref/plugins.txt
+    networks:
+      cicd_net:
+        ipv4_address: 172.20.0.21
+    depends_on:
+      - gitlab
+      - nexus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
+  # ---------------------------------------------------------------------------
+  # Nexus Repository Manager — Artifact Storage
+  # ---------------------------------------------------------------------------
+  nexus:
+    image: sonatype/nexus3:3.66.0
+    container_name: cicd_nexus
+    restart: unless-stopped
+    environment:
+      INSTALL4J_ADD_VM_PARAMS: >-
+        -Xms512m -Xmx1g
+        -XX:MaxDirectMemorySize=512m
+        -Djava.util.prefs.userRoot=/nexus-data/javaprefs
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    volumes:
+      - nexus_data:/nexus-data
+    networks:
+      cicd_net:
+        ipv4_address: 172.20.0.30
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/service/rest/v1/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
+  # ---------------------------------------------------------------------------
+  # Chef Infra Server — Configuration Management
+  # Built from official Chef Server .deb package (packages.chef.io)
+  # NOTE: No public Docker image exists — we build it from Ubuntu 20.04
+  # ---------------------------------------------------------------------------
+  chef-server:
+    build:
+      context: ./chef-server
+      dockerfile: Dockerfile
+    container_name: cicd_chef_server
+    restart: unless-stopped
+    hostname: chef-server.cicd.local
+    environment:
+      CHEF_LICENSE: accept
+      CHEF_ORG: cicd-demo
+      CHEF_ORG_FULL: "CICD Demo Organization"
+      CHEF_ADMIN_USER: admin
+      CHEF_ADMIN_PASS: ChefAdmin2024!
+    ports:
+      - "8100:80"
+      - "8143:443"
+    volumes:
+      - chef_server_data:/var/opt/opscode
+      - chef_server_logs:/var/log/opscode
+      - chef_server_etc:/etc/opscode
+    networks:
+      cicd_net:
+        ipv4_address: 172.20.0.40
+    privileged: true
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/_status"]
+      interval: 30s
+      timeout: 15s
+      retries: 20
+      start_period: 360s
+
+  # ---------------------------------------------------------------------------
+  # Chef Supermarket — Lightweight demo substitute
+  # The official chef/supermarket image is not publicly available.
+  # This builds a minimal Nginx-based cookbook registry that:
+  #   - serves the myapp cookbook for download
+  #   - exposes a /api/v1/universe endpoint (knife-compatible)
+  #   - provides a simple browsable UI at http://localhost:8200
+  # ---------------------------------------------------------------------------
+  chef-supermarket:
+    build:
+      context: ./chef-supermarket
+      dockerfile: Dockerfile
+    container_name: cicd_supermarket
+    restart: unless-stopped
+    hostname: supermarket.cicd.local
+    ports:
+      - "8200:80"
+    volumes:
+      - chef_supermarket_data:/usr/share/nginx/cookbooks
+    networks:
+      cicd_net:
+        ipv4_address: 172.20.0.50
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/api/v1/status"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Demo Target Node — simulated deployment target (Ubuntu + Chef client)
+  # ---------------------------------------------------------------------------
+  target-node:
+    image: ubuntu:22.04
+    container_name: cicd_target_node
+    restart: unless-stopped
+    hostname: node01.cicd.local
+    command: >
+      bash -c "
+        apt-get update -qq &&
+        apt-get install -y curl wget sudo openssh-server &&
+        mkdir -p /run/sshd &&
+        echo 'root:nodepassword' | chpasswd &&
+        sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config &&
+        /usr/sbin/sshd -D
+      "
+    ports:
+      - "2200:22"
+    networks:
+      cicd_net:
+        ipv4_address: 172.20.0.60

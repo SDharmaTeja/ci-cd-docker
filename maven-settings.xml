@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- =============================================================================
+     maven-settings.xml — Configure Maven to use Nexus as a mirror
+     Place this at ~/.m2/settings.xml or reference with -s flag:
+       mvn deploy -s maven-settings.xml
+     ============================================================================= -->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+            https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <!-- ---- Nexus credentials ------------------------------------------------ -->
+  <servers>
+    <server>
+      <id>nexus-releases</id>
+      <username>admin</username>
+      <password>NexusDemo2024!</password>
+    </server>
+    <server>
+      <id>nexus-snapshots</id>
+      <username>admin</username>
+      <password>NexusDemo2024!</password>
+    </server>
+    <server>
+      <id>nexus</id>
+      <username>admin</username>
+      <password>NexusDemo2024!</password>
+    </server>
+  </servers>
+
+  <!-- ---- Mirror all Maven Central requests through Nexus ------------------ -->
+  <mirrors>
+    <mirror>
+      <id>nexus-all</id>
+      <mirrorOf>*</mirrorOf>
+      <url>http://localhost:8081/repository/maven-public/</url>
+    </mirror>
+  </mirrors>
+
+  <!-- ---- Profile to add Nexus as both release and snapshot repo ----------- -->
+  <profiles>
+    <profile>
+      <id>nexus</id>
+      <repositories>
+        <repository>
+          <id>nexus-releases</id>
+          <url>http://localhost:8081/repository/demo-releases/</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+        <repository>
+          <id>nexus-snapshots</id>
+          <url>http://localhost:8081/repository/demo-snapshots/</url>
+          <releases><enabled>false</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+      </repositories>
+
+      <pluginRepositories>
+        <pluginRepository>
+          <id>nexus-plugins</id>
+          <url>http://localhost:8081/repository/maven-public/</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+
+  <activeProfiles>
+    <activeProfile>nexus</activeProfile>
+  </activeProfiles>
+
+</settings>

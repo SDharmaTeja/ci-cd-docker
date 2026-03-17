@@ -1,0 +1,59 @@
+# =============================================================================
+# .gitlab-ci.yml — GitLab CI configuration (optional)
+# In this demo GitLab is used as SCM only; Jenkins drives the pipeline.
+# This file is kept as reference for GitLab-native CI.
+# =============================================================================
+
+stages:
+  - validate
+  - test
+  - build
+  - notify
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  JENKINS_PIPELINE_URL: "http://jenkins:8090/job/demo-cicd-pipeline/build"
+
+# Cache Maven dependencies between jobs
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .m2/repository/
+
+# Validate POM and code style
+validate:
+  stage: validate
+  image: maven:3.9-eclipse-temurin-17
+  script:
+    - mvn validate --batch-mode
+    - echo "✅ POM validation passed"
+  only:
+    - merge_requests
+    - main
+
+# Unit tests (fast feedback on MR)
+unit-test:
+  stage: test
+  image: maven:3.9-eclipse-temurin-17
+  script:
+    - mvn test --batch-mode
+  artifacts:
+    when: always
+    reports:
+      junit: target/surefire-reports/*.xml
+  only:
+    - merge_requests
+
+# Trigger Jenkins full pipeline on main branch push
+trigger-jenkins:
+  stage: notify
+  image: curlimages/curl:latest
+  script:
+    - |
+      curl -X POST "${JENKINS_PIPELINE_URL}" \
+        --user "admin:CicdDemo2024!" \
+        --data-urlencode "token=gitlab-webhook-token" \
+        -w "\nHTTP Status: %{http_code}"
+  only:
+    - main
+  when: on_success

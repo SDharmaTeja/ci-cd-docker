@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chef Supermarket — Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: sans-serif; background: #f5f5f5; color: #333; }
+  header { background: #c0392b; color: white; padding: 16px 32px; }
+  header h1 { font-size: 20px; }
+  header p  { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+  .content  { max-width: 900px; margin: 32px auto; padding: 0 16px; }
+  .card     { background: white; border: 1px solid #ddd; border-radius: 6px;
+               padding: 20px 24px; margin-bottom: 16px; }
+  .card h2  { font-size: 16px; margin-bottom: 8px; color: #c0392b; }
+  .card p   { font-size: 13px; color: #666; line-height: 1.6; }
+  .badge    { display: inline-block; background: #eee; border-radius: 12px;
+               font-size: 11px; padding: 2px 10px; margin-right: 6px; color: #555; }
+  .api-link { font-family: monospace; font-size: 12px; background: #f8f8f8;
+               padding: 8px 12px; border-radius: 4px; display: block;
+               margin-top: 8px; border: 1px solid #e0e0e0; color: #333; }
+  .notice   { background: #fff9e6; border: 1px solid #f0c040; border-radius: 6px;
+               padding: 12px 16px; font-size: 13px; color: #7a5900; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🍴 Chef Supermarket <span style="font-size:13px;opacity:0.7">(Demo Instance)</span></h1>
+  <p>Internal cookbook repository for CI/CD demo environment</p>
+</header>
+<div class="content">
+  <div class="notice">
+    ℹ️ This is a lightweight demo substitute for Chef Supermarket.
+    Community cookbooks (java, docker) resolve from supermarket.chef.io.
+    The <code>myapp</code> cookbook is served from this instance.
+  </div>
+
+  <div class="card">
+    <h2>myapp <span class="badge">v1.0.0</span><span class="badge">demo</span></h2>
+    <p>Deploys the demo Spring Boot application. Downloads JAR from Nexus,
+    writes systemd unit file, enables and starts the service.</p>
+    <a class="api-link" href="/api/v1/universe">GET /api/v1/universe</a>
+  </div>
+
+  <div class="card">
+    <h2>java <span class="badge">v10.0.0</span></h2>
+    <p>Installs Java runtime. Resolves from the public Chef Supermarket
+    (supermarket.chef.io). Required by myapp cookbook.</p>
+  </div>
+
+  <div class="card">
+    <h2>docker <span class="badge">v10.0.0</span></h2>
+    <p>Installs and manages Docker Engine. Resolves from the public Chef Supermarket.
+    Optional dependency for container-based deployments.</p>
+  </div>
+
+  <div class="card">
+    <h2>API Endpoints</h2>
+    <p>Compatible with knife supermarket commands:</p>
+    <a class="api-link" href="/api/v1/status">GET /api/v1/status</a>
+    <a class="api-link" href="/api/v1/universe">GET /api/v1/universe</a>
+    <a class="api-link" href="/cookbooks/">GET /cookbooks/ (file listing)</a>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,56 @@
+# Jenkins Plugins — CI/CD Demo Environment
+# Format: plugin-id:version  (omit version for latest)
+
+# Core Pipeline
+workflow-aggregator:latest
+pipeline-stage-view:latest
+pipeline-graph-analysis:latest
+pipeline-model-definition:latest
+pipeline-build-step:latest
+
+# SCM — GitLab
+gitlab-plugin:latest
+gitlab-api:latest
+git:latest
+github:latest
+
+# Docker
+docker-workflow:latest
+docker-commons:latest
+docker-plugin:latest
+
+# Artifact Management — Nexus
+nexus-artifact-uploader:latest
+nexus-jenkins-plugin:latest
+
+# Chef
+chef:latest
+
+# Credentials & Security
+credentials:latest
+credentials-binding:latest
+plain-credentials:latest
+ssh-credentials:latest
+ssh-agent:latest
+
+# Build Tools
+maven-plugin:latest
+nodejs:latest
+junit:latest
+jacoco:latest
+cobertura:latest
+
+# Notifications & UI
+build-timeout:latest
+email-ext:latest
+slack:latest
+ansicolor:latest
+timestamper:latest
+
+# Utilities
+configuration-as-code:latest
+job-dsl:latest
+rebuild:latest
+parameterized-trigger:latest
+ws-cleanup:latest
+copyartifact:latest
