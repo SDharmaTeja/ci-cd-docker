@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-GITLAB_URL="${GITLAB_URL:-http://localhost:8080}"
+GITLAB_URL="${GITLAB_URL:-http://localhost:8089}"
 GITLAB_ROOT_PASS="${GITLAB_ROOT_PASS:-CicdDemo2024!}"
 PROJECT_NAME="demo-app"
 PROJECT_DESC="CI/CD Demo Application — Spring Boot"

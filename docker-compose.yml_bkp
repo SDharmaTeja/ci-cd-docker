@@ -73,30 +73,16 @@ services:
   # GitLab Community Edition — Source Code Management
   # ---------------------------------------------------------------------------
   gitlab:
-    #image: gitlab/gitlab-ce:18.8.7-ce.0
     image: gitlab/gitlab-ce:16.9.2-ce.0
     container_name: cicd_gitlab
     restart: unless-stopped
     hostname: gitlab.cicd.local
-    command: >
-      bash -c "
-        /assets/wrapper &
-        pid=$!;
-        echo 'Waiting for GitLab services to initialize...';
-        sleep 120;
-        echo 'Fixing PostgreSQL permissions...';
-        chown -R gitlab-psql:gitlab-psql /var/opt/gitlab/postgresql || true;
-        gitlab-ctl restart postgresql || true;
-        gitlab-ctl restart || true;
-        wait $pid
-      "
     environment:
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://localhost:8089'
+        external_url 'http://localhost:8080'
         gitlab_rails['gitlab_shell_ssh_port'] = 2222
         gitlab_rails['initial_root_password'] = 'CicdDemo2024!'
         gitlab_rails['initial_shared_runners_registration_token'] = 'demo-runner-token'
-        gitlab_rails['monitoring_whitelist'] = ['0.0.0.0/0', '::1/128', '172.31.0.0/16']
         # Disable sign-up for demo security
         gitlab_rails['gitlab_signup_enabled'] = false
         # Reduce resource usage for demo
@@ -108,7 +94,7 @@ services:
         gitlab_exporter['enable'] = false
         nginx['worker_processes'] = 2
     ports:
-      - "8089:8089"
+      - "8080:80"
       - "8443:443"
       - "2222:22"
     volumes:
@@ -120,7 +106,7 @@ services:
         ipv4_address: 172.20.0.20
     shm_size: "256m"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8089/-/health"]
+      test: ["CMD", "curl", "-f", "http://localhost/-/health"]
       interval: 60s
       timeout: 30s
       retries: 10
@@ -130,10 +116,9 @@ services:
   # Jenkins — CI/CD Pipeline Orchestrator
   # ---------------------------------------------------------------------------
   jenkins:
-    image: dharmatheja/cicd-demo-jenkins:latest
-    #build:
-      #context: ./jenkins
-      #dockerfile: Dockerfile
+    build:
+      context: ./jenkins
+      dockerfile: Dockerfile
     container_name: cicd_jenkins
     restart: unless-stopped
     user: root
@@ -157,6 +142,7 @@ services:
       cicd_net:
         ipv4_address: 172.20.0.21
     depends_on:
+      - gitlab
       - nexus
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8090/login"]
@@ -197,6 +183,37 @@ services:
   # Built from official Chef Server .deb package (packages.chef.io)
   # NOTE: No public Docker image exists — we build it from Ubuntu 20.04
   # ---------------------------------------------------------------------------
+  chef-server:
+    build:
+      context: ./chef-server
+      dockerfile: Dockerfile
+    container_name: cicd_chef_server
+    restart: unless-stopped
+    hostname: chef-server.cicd.local
+    environment:
+      CHEF_LICENSE: accept
+      CHEF_ORG: cicd-demo
+      CHEF_ORG_FULL: "CICD Demo Organization"
+      CHEF_ADMIN_USER: admin
+      CHEF_ADMIN_PASS: ChefAdmin2024!
+    ports:
+      - "8100:80"
+      - "8143:443"
+    volumes:
+      - chef_server_data:/var/opt/opscode
+      - chef_server_logs:/var/log/opscode
+      - chef_server_etc:/etc/opscode
+    networks:
+      cicd_net:
+        ipv4_address: 172.20.0.40
+    privileged: true
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/_status"]
+      interval: 30s
+      timeout: 15s
+      retries: 20
+      start_period: 360s
+
   # ---------------------------------------------------------------------------
   # Chef Supermarket — Lightweight demo substitute
   # The official chef/supermarket image is not publicly available.

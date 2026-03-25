@@ -24,7 +24,7 @@ $ErrorActionPreference = "Continue"
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-$GitLabUrl       = "http://localhost:8080"
+$GitLabUrl       = "http://localhost:8089"
 $JenkinsUrl      = "http://localhost:8090"
 $NexusUrl        = "http://localhost:8081"
 $ChefUrl         = "http://localhost:8100"
@@ -211,7 +211,7 @@ function Test-Resources {
     }
 
     # Port conflicts
-    $ports = @(8080, 8081, 8082, 8090, 8100, 8200, 2200, 2222, 50000)
+    $ports = @(8089, 8081, 8082, 8090, 8100, 8200, 2200, 2222, 50000)
     $conflicts = @()
     foreach ($port in $ports) {
         $conn = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
@@ -699,7 +699,7 @@ function Show-Summary {
     Write-Host "+==================================================================+" -ForegroundColor Green
     Write-Host "|  SERVICE URLS                                                    |" -ForegroundColor Green
     Write-Host "+------------------------------------------------------------------+" -ForegroundColor Green
-    Write-Host "|  GitLab CE       :  http://localhost:8080                        |" -ForegroundColor Green
+    Write-Host "|  GitLab CE       :  http://localhost:8089                        |" -ForegroundColor Green
     Write-Host "|  Jenkins         :  http://localhost:8090                        |" -ForegroundColor Green
     Write-Host "|  Nexus           :  http://localhost:8081                        |" -ForegroundColor Green
     Write-Host "|  Chef Server     :  http://localhost:8100                        |" -ForegroundColor Green

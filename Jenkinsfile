@@ -23,7 +23,7 @@ pipeline {
     // ---- Pipeline-wide environment ----
     environment {
         // Service URLs (Docker internal network)
-        GITLAB_URL         = 'http://172.20.0.20'
+        GITLAB_URL         = 'http://172.20.0.20:8089'
         NEXUS_URL          = 'http://172.20.0.30:8081'
         NEXUS_DOCKER_URL   = '172.20.0.30:8082'
         CHEF_SERVER_URL    = 'http://172.20.0.40'
@@ -50,7 +50,6 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timeout(time: 60, unit: 'MINUTES')
         timestamps()
-        ansiColor('xterm')
         disableConcurrentBuilds()
     }
 

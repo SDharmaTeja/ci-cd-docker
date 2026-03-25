@@ -40,7 +40,7 @@ cd "$SCRIPT_DIR"
 # Configuration
 # ---------------------------------------------------------------------------
 COMPOSE_FILE="docker-compose.yml"
-GITLAB_URL="http://localhost:8080"
+GITLAB_URL="http://localhost:8089"
 JENKINS_URL="http://localhost:8090"
 NEXUS_URL="http://localhost:8081"
 CHEF_URL="http://localhost:8100"
@@ -231,7 +231,7 @@ check_resources() {
     fi
 
     # Port conflicts
-    local ports=(8080 8081 8082 8090 8100 8200 2200 2222 50000)
+    local ports=(8089 8081 8082 8090 8100 8200 2200 2222 50000)
     for port in "${ports[@]}"; do
         if lsof -i :"$port" &>/dev/null 2>&1; then
             warn "Port ${port} is already in use - check for conflicts"
