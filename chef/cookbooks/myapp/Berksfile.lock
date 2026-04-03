@@ -1,0 +1,15 @@
+DEPENDENCIES
+  docker (~> 10.0)
+  java (~> 10.0)
+  myapp
+    path: .
+    metadata: true
+
+GRAPH
+  docker (10.4.9)
+  java (10.2.2)
+    line (>= 0.0.0)
+  line (4.5.22)
+  myapp (1.0.0)
+    docker (~> 10.0)
+    java (~> 10.0)
